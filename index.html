@@ -188,12 +188,16 @@
           const cantidad = parseInt(document.getElementById("multiplicador").value) || 1;
           producto.escaneados += cantidad;
           const ok = document.getElementById("sonido-ok");
-          ok.currentTime = 0;
-          ok.play();
+          if (ok) {
+            ok.currentTime = 0;
+            ok.play().catch(() => {});
+          }
         } else {
           const error = document.getElementById("sonido-error");
-          error.currentTime = 0;
-          error.play();
+          if (error) {
+            error.currentTime = 0;
+            error.play().catch(() => {});
+          }
           mostrarMensaje("Código no encontrado");
         }
         mostrarPedido();
@@ -249,32 +253,6 @@
       div.style.display = "block";
       setTimeout(() => div.style.display = "none", 3000);
     }
-    let deferredPrompt;
-
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-
-  const installBtn = document.createElement("button");
-  installBtn.textContent = "Instalar App";
-  installBtn.style.background = "#4CAF50";
-  installBtn.style.color = "white";
-  installBtn.style.border = "none";
-  installBtn.style.padding = "10px 20px";
-  installBtn.style.margin = "1rem auto";
-  installBtn.style.display = "block";
-  installBtn.style.fontSize = "1.1rem";
-  installBtn.style.cursor = "pointer";
-  document.querySelector(".contenedor").appendChild(installBtn);
-
-  installBtn.addEventListener("click", () => {
-    installBtn.style.display = "none";
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then(() => {
-      deferredPrompt = null;
-    });
-  });
-});
   </script>
 </body>
 </html>
