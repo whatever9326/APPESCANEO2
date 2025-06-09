@@ -2,77 +2,136 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Escaneo de Pedidos</title>
   <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon-192.png" />
   <meta name="theme-color" content="#1976d2" />
   <style>
-    body { font-family: sans-serif; padding: 1rem; background: #fafafa; }
-    input, button, select { margin: 0.5rem 0; padding: 0.5rem; font-size: 1rem; width: 100%; max-width: 600px; display: block; }
-    button { background: #1976d2; color: white; border: none; border-radius: 5px; cursor: pointer; }
-    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-    th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: center; }
-    .completo { background: #c8e6c9; }
-    .exceso { background: #ffcdd2; }
+    body {
+      font-family: sans-serif;
+      padding: 1rem;
+      margin: 0;
+      background: #fafafa;
+    }
+    h1 {
+      font-size: 1.5rem;
+      text-align: center;
+    }
+    input[type="text"], input[type="url"], input[type="number"], select, button {
+      width: 100%;
+      max-width: 600px;
+      margin: 0.5rem auto;
+      display: block;
+      font-size: 1.1rem;
+      padding: 0.5rem;
+    }
+    button {
+      cursor: pointer;
+      background: #1976d2;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+    button:hover {
+      background: #125aa0;
+    }
   </style>
 </head>
 <body>
   <h1>Escaneo de Productos</h1>
-  <input type="url" id="sheetUrl" placeholder="URL pública de Google Sheets">
+
+  <input type="url" id="sheetUrl" placeholder="URL pública de Google Sheets" />
   <button onclick="cargarDesdeSheet()">Cargar</button>
+
   <select id="pedidoSelect"></select>
-  <input type="number" id="multiplicador" value="10" min="1" placeholder="Cantidad por escaneo">
-  <input type="text" id="barcodeInput" placeholder="Escanea código de barras" autofocus>
+  <input type="number" id="multiplicador" value="10" min="1" placeholder="Cantidad por escaneo" />
+  <input type="text" id="barcodeInput" placeholder="Escanea código de barras" autofocus />
   <button onclick="exportarResumen()">Exportar resumen</button>
   <button onclick="guardarHistorial()">Guardar historial</button>
   <button onclick="verHistorial()">Ver historial</button>
-  <div id="mensaje-temporal" style="color:red; font-weight:bold;"></div>
+
+  <div id="mensaje-temporal" style="text-align:center;color:red;font-weight:bold;margin-top:1rem;"></div>
   <table id="pedidoTable"></table>
   <div id="historial"></div>
+
+  <audio id="sonido-ok" preload="auto">
+    <source src="ok.mp3" type="audio/mpeg" />
+  </audio>
+  <audio id="sonido-error" preload="auto">
+    <source src="error.mp3" type="audio/mpeg" />
+  </audio>
+
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script>
-    let pedidos = {}, pedidoActual = null, historial = [];
+    let pedidos = {};
+    let pedidoActual = null;
+    let historial = [];
 
     function cargarDesdeSheet() {
       const url = document.getElementById("sheetUrl").value;
-      const id = url.match(/\/d\/(.*?)(\/|$)/)?.[1];
-      const apiUrl = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv`;
+      if (!url.includes("docs.google.com")) return mostrarMensaje("URL inválida");
+
+      const sheetID = url.match(/\/d\/(.*?)(\/|$)/)?.[1];
+      const apiUrl = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:csv`;
 
       fetch(apiUrl)
         .then(res => res.text())
         .then(csv => Papa.parse(csv, { header: true }))
         .then(result => {
-          pedidos = {};
-          result.data.forEach(row => {
-            const id = row.PEDIDO?.trim();
-            if (!id) return;
-            if (!pedidos[id]) pedidos[id] = [];
-            pedidos[id].push({ codigo: row.CODIGO, descripcion: row.DESCRIPCION, cantidad: parseInt(row.CANTIDAD), escaneados: 0 });
-          });
-          const select = document.getElementById("pedidoSelect");
-          select.innerHTML = "";
-          Object.keys(pedidos).forEach(id => {
-            const option = document.createElement("option");
-            option.value = id;
-            option.textContent = id;
-            select.appendChild(option);
-          });
-          pedidoActual = pedidos[select.value];
-          select.onchange = () => {
-            pedidoActual = pedidos[select.value];
-            mostrarPedido();
-          };
-          mostrarPedido();
+          pedidos = agruparPedidos(result.data);
+          llenarSelect();
+        })
+        .catch(() => mostrarMensaje("No se pudo cargar el archivo"));
+    }
+
+    function agruparPedidos(data) {
+      const grupos = {};
+      data.forEach(row => {
+        const id = row.PEDIDO?.trim();
+        if (!id) return;
+        if (!grupos[id]) grupos[id] = [];
+        grupos[id].push({
+          codigo: row.CODIGO?.trim(),
+          descripcion: row.DESCRIPCION?.trim(),
+          cantidad: parseInt(row.CANTIDAD),
+          escaneados: 0
         });
+      });
+      return grupos;
+    }
+
+    function llenarSelect() {
+      const select = document.getElementById("pedidoSelect");
+      select.innerHTML = "";
+      Object.keys(pedidos).forEach(id => {
+        const option = document.createElement("option");
+        option.value = id;
+        option.textContent = id;
+        select.appendChild(option);
+      });
+      pedidoActual = pedidos[select.value];
+      select.onchange = () => {
+        pedidoActual = pedidos[select.value];
+        mostrarPedido();
+      };
+      mostrarPedido();
     }
 
     function mostrarPedido() {
       const tabla = document.getElementById("pedidoTable");
-      tabla.innerHTML = "<thead><tr><th>Código</th><th>Descripción</th><th>Requerido</th><th>Escaneado</th></tr></thead>";
+      tabla.innerHTML = "";
+      if (!pedidoActual) return;
+
+      const thead = document.createElement("thead");
+      thead.innerHTML = `<tr><th>Código</th><th>Descripción</th><th>Requerido</th><th>Escaneado</th></tr>`;
+      tabla.appendChild(thead);
+
       const tbody = document.createElement("tbody");
-      pedidoActual?.forEach(p => {
+      pedidoActual.forEach(p => {
         const row = document.createElement("tr");
-        row.className = p.escaneados === p.cantidad ? "completo" : p.escaneados > p.cantidad ? "exceso" : "";
+        if (p.escaneados === p.cantidad) row.classList.add("completo");
+        else if (p.escaneados > p.cantidad) row.classList.add("exceso");
         row.innerHTML = `<td>${p.codigo}</td><td>${p.descripcion}</td><td>${p.cantidad}</td><td>${p.escaneados}</td>`;
         tbody.appendChild(row);
       });
@@ -83,11 +142,19 @@
       if (e.key === "Enter") {
         const codigo = e.target.value.trim();
         e.target.value = "";
-        const mult = parseInt(document.getElementById("multiplicador").value) || 1;
-        const prod = pedidoActual.find(p => p.codigo === codigo);
-        if (prod) {
-          prod.escaneados += mult;
+        if (!codigo || !pedidoActual) return;
+
+        const producto = pedidoActual.find(p => p.codigo === codigo);
+        if (producto) {
+          const cantidad = parseInt(document.getElementById("multiplicador").value) || 1;
+          producto.escaneados += cantidad;
+          const ok = document.getElementById("sonido-ok");
+          ok.currentTime = 0;
+          ok.play();
         } else {
+          const error = document.getElementById("sonido-error");
+          error.currentTime = 0;
+          error.play();
           mostrarMensaje("Código no encontrado");
         }
         mostrarPedido();
@@ -95,40 +162,48 @@
     });
 
     function exportarResumen() {
+      if (!pedidoActual) return;
       const filas = pedidoActual.map(p => [p.codigo, p.descripcion, p.cantidad, p.escaneados]);
       const csv = ["CODIGO,DESCRIPCION,CANTIDAD,ESCANEADOS", ...filas.map(f => f.join(","))].join("\n");
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "resumen.csv";
-      a.click();
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "resumen.csv";
+      link.click();
     }
 
     function guardarHistorial() {
+      if (!pedidoActual) return;
       historial.push({ fecha: new Date().toLocaleString(), pedido: JSON.parse(JSON.stringify(pedidoActual)) });
       localStorage.setItem("historial", JSON.stringify(historial));
       mostrarMensaje("Historial guardado", true);
     }
 
     function verHistorial() {
-      historial = JSON.parse(localStorage.getItem("historial")) || [];
       const div = document.getElementById("historial");
-      div.innerHTML = historial.map(e => {
-        const detalles = e.pedido.map(p => `${p.codigo}: ${p.escaneados}/${p.cantidad}`).join("<br>");
-        return `<div><strong>${e.fecha}</strong><br>${detalles}</div><hr>`;
+      historial = JSON.parse(localStorage.getItem("historial")) || [];
+      div.innerHTML = historial.map(entry => {
+        const lista = entry.pedido.map(p => `${p.codigo}: ${p.escaneados}/${p.cantidad}`).join("<br>");
+        return `<div><strong>${entry.fecha}</strong><br>${lista}</div><hr>`;
       }).join("");
     }
 
-    function mostrarMensaje(msg, ok=false) {
-      const el = document.getElementById("mensaje-temporal");
-      el.style.color = ok ? "green" : "red";
-      el.textContent = msg;
-      setTimeout(() => el.textContent = "", 3000);
+    function mostrarMensaje(msg, ok = false) {
+      const div = document.getElementById("mensaje-temporal");
+      div.textContent = msg;
+      div.style.color = ok ? "green" : "red";
+      div.style.display = "block";
+      setTimeout(() => div.style.display = "none", 3000);
     }
+  </script>
 
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("service-worker.js");
+  <!-- Register service worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js');
+      });
     }
   </script>
 </body>
