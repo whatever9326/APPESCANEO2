@@ -1,26 +1,32 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Escaneo de Pedidos</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Escaneo de Pedidos - Demo</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon-192.png" />
   <meta name="theme-color" content="#1976d2" />
   <style>
+    * { box-sizing: border-box; }
     body {
       font-family: sans-serif;
-      padding: 1rem;
       margin: 0;
+      padding: 0;
       background: #fafafa;
+    }
+    .contenedor {
+      padding: 1rem;
+      background: white;
+      max-width: 800px;
+      margin: auto;
     }
     h1 {
       font-size: 1.5rem;
       text-align: center;
     }
-    input[type="text"], input[type="url"], input[type="number"], select, button {
-      width: 100%;
-      max-width: 600px;
+    input[type="file"], input[type="text"], input[type="url"], select, button {
+      width: 100%; max-width: 600px;
       margin: 0.5rem auto;
       display: block;
       font-size: 1.1rem;
@@ -33,45 +39,69 @@
       border: none;
       border-radius: 5px;
     }
-    button:hover {
-      background: #125aa0;
+    button:hover { background: #125aa0; }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 1rem;
+      font-size: 0.95rem;
     }
-    .completo {
-  background-color: #c8e6c9; /* Verde claro */
-}
-.exceso {
-  background-color: #ffcdd2; /* Rojo claro */
-}
-
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+    th { background: #f2f2f2; }
+    .completo { background: #c8e6c9; }
+    .exceso { background: #ffcdd2; }
+    .error {
+      color: red;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+    }
+    #historial {
+      padding-top: 1rem;
+      font-size: 0.9rem;
+    }
+    #mensaje-temporal {
+      color: red;
+      text-align: center;
+      margin-top: 1rem;
+      font-weight: bold;
+      display: none;
+    }
   </style>
 </head>
 <body>
-  <h1>Escaneo de Productos</h1>
+  <div class="contenedor">
+    <h1>Escaneo de Productos</h1>
 
-  <input type="url" id="sheetUrl" placeholder="URL pública de Google Sheets" />
-  <button onclick="cargarDesdeSheet()">Cargar</button>
+    <input type="url" id="sheetUrl" placeholder="URL pública de Google Sheets">
+    <button onclick="cargarDesdeSheet()">Cargar</button>
 
-  <select id="pedidoSelect"></select>
-  <input type="number" id="multiplicador" value="10" min="1" placeholder="Cantidad por escaneo" />
-  <input type="text" id="barcodeInput" placeholder="Escanea código de barras" autofocus />
-  <button onclick="exportarResumen()">Exportar resumen</button>
-  <button onclick="guardarHistorial()">Guardar historial</button>
-  <button onclick="verHistorial()">Ver historial</button>
+    <select id="pedidoSelect"></select>
+    <input type="number" id="multiplicador" value="10" min="1" placeholder="Cantidad por escaneo">
+    <input type="text" id="barcodeInput" placeholder="Escanea código de barras" autofocus>
+    <button onclick="exportarResumen()">Exportar resumen</button>
+    <button onclick="exportarExcel()">Exportar Excel</button>
+    <button onclick="guardarHistorial()">Guardar historial</button>
+    <button onclick="verHistorial()">Ver historial</button>
 
-  <button id="instalarApp" style="display:none; background:#4caf50;">Instalar App</button>
-
-  <div id="mensaje-temporal" style="text-align:center;color:red;font-weight:bold;margin-top:1rem;"></div>
-  <table id="pedidoTable"></table>
-  <div id="historial"></div>
+    <div id="errores" class="error"></div>
+    <div id="mensaje-temporal"></div>
+    <table id="pedidoTable"></table>
+    <div id="historial"></div>
+  </div>
 
   <audio id="sonido-ok" preload="auto">
-    <source src="ok.mp3" type="audio/mpeg" />
+    <source src="ok.mp3" type="audio/mpeg">
   </audio>
   <audio id="sonido-error" preload="auto">
-    <source src="error.mp3" type="audio/mpeg" />
+    <source src="error.mp3" type="audio/mpeg">
   </audio>
 
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/xlsx.full.min.js"></script>
   <script>
     let pedidos = {};
     let pedidoActual = null;
@@ -147,7 +177,7 @@
       tabla.appendChild(tbody);
     }
 
-    document.getElementById("barcodeInput").addEventListener("keypress", function(e) {
+    document.getElementById("barcodeInput").addEventListener("keypress", function (e) {
       if (e.key === "Enter") {
         const codigo = e.target.value.trim();
         e.target.value = "";
@@ -182,6 +212,22 @@
       link.click();
     }
 
+    function exportarExcel() {
+      if (!pedidoActual) return;
+
+      const filas = pedidoActual.map(p => ({
+        CÓDIGO: p.codigo,
+        DESCRIPCIÓN: p.descripcion,
+        REQUERIDO: p.cantidad,
+        ESCANEADO: p.escaneados
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(filas);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Resumen");
+      XLSX.writeFile(workbook, "resumen.xlsx");
+    }
+
     function guardarHistorial() {
       if (!pedidoActual) return;
       historial.push({ fecha: new Date().toLocaleString(), pedido: JSON.parse(JSON.stringify(pedidoActual)) });
@@ -204,33 +250,6 @@
       div.style.color = ok ? "green" : "red";
       div.style.display = "block";
       setTimeout(() => div.style.display = "none", 3000);
-    }
-
-    // Manejo del botón de instalación
-    let deferredPrompt;
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      document.getElementById('instalarApp').style.display = 'block';
-    });
-
-    document.getElementById('instalarApp').addEventListener('click', () => {
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then(() => {
-          deferredPrompt = null;
-          document.getElementById('instalarApp').style.display = 'none';
-        });
-      }
-    });
-  </script>
-
-  <!-- Register service worker -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('service-worker.js');
-      });
     }
   </script>
 </body>
