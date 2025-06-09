@@ -249,10 +249,20 @@
     }
 
     function guardarHistorial() {
-      if (!pedidoActual) return;
-      historial.push({ fecha: new Date().toLocaleString(), pedido: JSON.parse(JSON.stringify(pedidoActual)) });
-      localStorage.setItem("historial", JSON.stringify(historial));
-      mostrarMensaje("Historial guardado", true);
+  if (!pedidoActual) return;
+  historial.push({ fecha: new Date().toLocaleString(), pedido: JSON.parse(JSON.stringify(pedidoActual)) });
+  try {
+    localStorage.setItem("historial", JSON.stringify(historial));
+    mostrarMensaje("Historial guardado", true);
+  } catch (e) {
+    if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+      mostrarMensaje("No se pudo guardar el historial: almacenamiento lleno");
+    } else {
+      mostrarMensaje("Error al guardar historial");
+    }
+  }
+}
+
     }
 
     function verHistorial() {
