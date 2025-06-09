@@ -101,7 +101,7 @@
   </audio>
 
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-  <script src="https://cdn.sheetjs.com/xlsx-latest/package/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script>
     let pedidos = {};
     let pedidoActual = null;
@@ -214,18 +214,16 @@
 
     function exportarExcel() {
       if (!pedidoActual) return;
-
-      const filas = pedidoActual.map(p => ({
-        CÓDIGO: p.codigo,
-        DESCRIPCIÓN: p.descripcion,
-        REQUERIDO: p.cantidad,
-        ESCANEADO: p.escaneados
+      const data = pedidoActual.map(p => ({
+        CODIGO: p.codigo,
+        DESCRIPCION: p.descripcion,
+        CANTIDAD: p.cantidad,
+        ESCANEADOS: p.escaneados
       }));
-
-      const worksheet = XLSX.utils.json_to_sheet(filas);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Resumen");
-      XLSX.writeFile(workbook, "resumen.xlsx");
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Resumen");
+      XLSX.writeFile(wb, "resumen.xlsx");
     }
 
     function guardarHistorial() {
