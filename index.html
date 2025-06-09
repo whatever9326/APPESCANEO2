@@ -84,6 +84,7 @@
     <input type="text" id="barcodeInput" placeholder="Escanea código de barras" autofocus>
     <button onclick="exportarResumen()">Exportar resumen</button>
     <button onclick="exportarExcel()">Exportar Excel</button>
+    <button onclick="exportarTodos()">Exportar todo</button>
     <button onclick="guardarHistorial()">Guardar historial</button>
     <button onclick="verHistorial()">Ver historial</button>
     <button onclick="borrarProgreso()">Borrar progreso</button>
@@ -190,10 +191,10 @@
           producto.escaneados += cantidad;
           mostrarPedido();
 
-          if (producto.escaneados > producto.cantidad) {
-            document.getElementById("sonido-error").play();
-          } else {
+          if (producto.escaneados === producto.cantidad) {
             document.getElementById("sonido-ok").play();
+          } else if (producto.escaneados > producto.cantidad) {
+            document.getElementById("sonido-error").play();
           }
         } else {
           document.getElementById("sonido-error").play();
@@ -226,6 +227,25 @@
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Resumen");
       XLSX.writeFile(wb, "resumen.xlsx");
+    }
+
+    function exportarTodos() {
+      const todos = [];
+      for (const [pedidoId, productos] of Object.entries(pedidos)) {
+        productos.forEach(p => {
+          todos.push({
+            PEDIDO: pedidoId,
+            CODIGO: p.codigo,
+            DESCRIPCION: p.descripcion,
+            CANTIDAD: p.cantidad,
+            ESCANEADOS: p.escaneados
+          });
+        });
+      }
+      const ws = XLSX.utils.json_to_sheet(todos);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Todos");
+      XLSX.writeFile(wb, "todos_los_pedidos.xlsx");
     }
 
     function guardarHistorial() {
