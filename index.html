@@ -87,6 +87,9 @@
     <button onclick="guardarHistorial()">Guardar historial</button>
     <button onclick="verHistorial()">Ver historial</button>
 
+    <button onclick="document.getElementById('sonido-ok').play()">Probar OK</button>
+    <button onclick="document.getElementById('sonido-error').play()">Probar Error</button>
+
     <div id="errores" class="error"></div>
     <div id="mensaje-temporal"></div>
     <table id="pedidoTable"></table>
@@ -188,16 +191,12 @@
           const cantidad = parseInt(document.getElementById("multiplicador").value) || 1;
           producto.escaneados += cantidad;
           const ok = document.getElementById("sonido-ok");
-          if (ok) {
-            ok.currentTime = 0;
-            ok.play().catch(() => {});
-          }
+          ok.currentTime = 0;
+          ok.play();
         } else {
           const error = document.getElementById("sonido-error");
-          if (error) {
-            error.currentTime = 0;
-            error.play().catch(() => {});
-          }
+          error.currentTime = 0;
+          error.play();
           mostrarMensaje("Código no encontrado");
         }
         mostrarPedido();
