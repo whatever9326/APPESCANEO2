@@ -187,16 +187,17 @@
         if (producto) {
           const cantidad = parseInt(document.getElementById("multiplicador").value) || 1;
           producto.escaneados += cantidad;
-          const ok = document.getElementById("sonido-ok");
-          ok.currentTime = 0;
-          ok.play();
+          mostrarPedido();
+
+          if (producto.escaneados > producto.cantidad) {
+            document.getElementById("sonido-error").play();
+          } else {
+            document.getElementById("sonido-ok").play();
+          }
         } else {
-          const error = document.getElementById("sonido-error");
-          error.currentTime = 0;
-          error.play();
+          document.getElementById("sonido-error").play();
           mostrarMensaje("Código no encontrado");
         }
-        mostrarPedido();
       }
     });
 
