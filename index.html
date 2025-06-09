@@ -97,11 +97,15 @@
   </div>
 
   <audio id="sonido-ok" preload="auto">
-  <source src="/ok.mp3" type="audio/mpeg">
+  <source src="ok.wav" type="audio/wav">
 </audio>
 <audio id="sonido-error" preload="auto">
-  <source src="/error.mp3" type="audio/mpeg">
+  <source src="error1.wav" type="audio/wav">
 </audio>
+
+<button onclick="document.getElementById('sonido-ok').play()">Probar OK</button>
+<button onclick="document.getElementById('sonido-error').play()">Probar Error</button>
+
 
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
