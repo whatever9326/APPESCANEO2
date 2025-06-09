@@ -51,6 +51,8 @@
   <button onclick="guardarHistorial()">Guardar historial</button>
   <button onclick="verHistorial()">Ver historial</button>
 
+  <button id="instalarApp" style="display:none; background:#4caf50;">Instalar App</button>
+
   <div id="mensaje-temporal" style="text-align:center;color:red;font-weight:bold;margin-top:1rem;"></div>
   <table id="pedidoTable"></table>
   <div id="historial"></div>
@@ -196,17 +198,33 @@
       div.style.display = "block";
       setTimeout(() => div.style.display = "none", 3000);
     }
+
+    // Manejo del botón de instalación
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      document.getElementById('instalarApp').style.display = 'block';
+    });
+
+    document.getElementById('instalarApp').addEventListener('click', () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(() => {
+          deferredPrompt = null;
+          document.getElementById('instalarApp').style.display = 'none';
+        });
+      }
+    });
   </script>
 
   <!-- Register service worker -->
   <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/service-worker.js')
-        .then(() => console.log('SW registrado'))
-        .catch(err => console.error('SW error:', err));
-    });
-  }
-</script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js');
+      });
+    }
+  </script>
 </body>
 </html>
