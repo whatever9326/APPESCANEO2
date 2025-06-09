@@ -86,6 +86,7 @@
     <button onclick="exportarExcel()">Exportar Excel</button>
     <button onclick="guardarHistorial()">Guardar historial</button>
     <button onclick="verHistorial()">Ver historial</button>
+    <button onclick="borrarProgreso()">Borrar progreso</button>
 
     <div id="errores" class="error"></div>
     <div id="mensaje-temporal"></div>
@@ -241,6 +242,13 @@
         const lista = entry.pedido.map(p => `${p.codigo}: ${p.escaneados}/${p.cantidad}`).join("<br>");
         return `<div><strong>${entry.fecha}</strong><br>${lista}</div><hr>`;
       }).join("");
+    }
+
+    function borrarProgreso() {
+      if (!pedidoActual) return;
+      pedidoActual.forEach(p => p.escaneados = 0);
+      mostrarPedido();
+      mostrarMensaje("Progreso borrado", true);
     }
 
     function mostrarMensaje(msg, ok = false) {
