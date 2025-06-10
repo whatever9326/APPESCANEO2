@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Escaneo de Pedidos - Demo</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon-192.png" />
+  <meta name="theme-color" content="#1976d2" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #fafafa;
+    }
+    .contenedor {
+      padding: 1rem;
+      background: white;
+      max-width: 800px;
+      margin: auto;
+    }
+    h1 {
+      font-size: 1.5rem;
+      text-align: center;
+    }
+    input[type="file"], input[type="text"], input[type="url"], select, button, .num-input-display {
+      width: 100%; max-width: 600px;
+      margin: 0.5rem auto;
+      display: block;
+      font-size: 1.1rem;
+      padding: 0.5rem;
+    }
+    .num-input-display {
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      background: #fff;
+      text-align: center;
+      cursor: pointer;
+    }
+    .teclado {
+      display: none;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+      max-width: 600px;
+      margin: 0.5rem auto;
+    }
+    .teclado button {
+      font-size: 1.2rem;
+      padding: 1rem;
+    }
+    button {
+      cursor: pointer;
+      background: #1976d2;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+    button:hover { background: #125aa0; }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 1rem;
+      font-size: 0.95rem;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+    th { background: #f2f2f2; }
+    .completo { background: #c8e6c9; }
+    .exceso { background: #ffcdd2; }
+    .error {
+      color: red;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+    }
+    #historial {
+      padding-top: 1rem;
+      font-size: 0.9rem;
+    }
+    #mensaje-temporal {
+      color: red;
+      text-align: center;
+      margin-top: 1rem;
+      font-weight: bold;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="contenedor">
+    <h1>Escaneo de Productos</h1>
+    <input type="url" id="sheetUrl" placeholder="URL pública de Google Sheets">
+    <button onclick="cargarDesdeSheet()">Cargar</button>
+    <select id="pedidoSelect"></select>
+    <div class="num-input-display" id="multiplicadorDisplay" onclick="mostrarTeclado()">Cantidad por escaneo: 10</div>
+    <div class="teclado" id="teclado" style="display:none;">
+      <button onclick="agregarNumero('1')">1</button>
+      <button onclick="agregarNumero('2')">2</button>
+      <button onclick="agregarNumero('3')">3</button>
+      <button onclick="agregarNumero('4')">4</button>
+      <button onclick="agregarNumero('5')">5</button>
+      <button onclick="agregarNumero('6')">6</button>
+      <button onclick="agregarNumero('7')">7</button>
+      <button onclick="agregarNumero('8')">8</button>
+      <button onclick="agregarNumero('9')">9</button>
+      <button onclick="borrarNumero()">←</button>
+      <button onclick="agregarNumero('0')">0</button>
+      <button onclick="aceptarNumero()">OK</button>
+    </div>
+    <input type="text" id="barcodeInput" placeholder="Escanea código de barras" autofocus>
+    <button onclick="exportarResumen()">Exportar resumen</button>
+    <button onclick="exportarExcel()">Exportar Excel</button>
+    <button onclick="exportarTodos()">Exportar todo</button>
+    <button onclick="borrarProgreso()">Borrar progreso</button>
+    <button onclick="guardarHistorial()">Guardar historial</button>
+    <button onclick="verHistorial()">Ver historial</button>
+    <table id="pedidoTable"></table>
+    <div id="historial"></div>
+  </div>
+  <audio id="sonido-ok" preload="auto">
+    <source src="ok.wav" type="audio/wav">
+  </audio>
+  <audio id="sonido-error" preload="auto">
+    <source src="error1.wav" type="audio/wav">
+  </audio>
+</body>
+</html>
