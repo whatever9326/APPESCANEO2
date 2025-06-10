@@ -99,7 +99,7 @@
 
     <select id="pedidoSelect"></select>
     <div class="num-input-display" id="multiplicadorDisplay" onclick="mostrarTeclado()">Cantidad por escaneo: 10</div>
-    <div class="teclado" id="teclado">
+    <div class="teclado" id="teclado" style="display:none;">
       <button onclick="agregarNumero('1')">1</button>
       <button onclick="agregarNumero('2')">2</button>
       <button onclick="agregarNumero('3')">3</button>
@@ -112,8 +112,8 @@
       <button onclick="borrarNumero()">←</button>
       <button onclick="agregarNumero('0')">0</button>
       <button onclick="aceptarNumero()">OK</button>
-      <button onclick="ocultarTeclado()">Cerrar</button>
     </div>
+    <input type="text" id="barcodeInput" placeholder="Escanea código de barras" autofocus>
 
     <button onclick="exportarResumen()">Exportar resumen</button>
     <button onclick="exportarExcel()">Exportar Excel</button>
@@ -132,7 +132,72 @@
   <audio id="sonido-error" preload="auto">
     <source src="error1.wav" type="audio/wav">
   </audio>
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js">document.getElementById("barcodeInput").addEventListener("keypress", function (e) {
+  if (e.key === "Enter") {
+    const codigo = e.target.value.trim();
+    e.target.value = "";
+    if (!codigo || !pedidoActual) return;
+
+    const producto = pedidoActual.find(p => p.codigo === codigo);
+    if (producto) {
+      const cantidad = parseInt(cantidadTemporal) || 1;
+      producto.escaneados += cantidad;
+      cantidadTemporal = "10";
+      actualizarDisplay();
+      mostrarPedido();
+
+      if (producto.escaneados === producto.cantidad) {
+        document.getElementById("sonido-ok").play();
+      } else if (producto.escaneados > producto.cantidad) {
+        document.getElementById("sonido-error").play();
+      }
+    } else {
+      document.getElementById("sonido-error").play();
+      mostrarMensaje("Código no encontrado");
+    }
+  }
+});
+
+let cantidadTemporal = "10";
+
+function mostrarTeclado() {
+  clearTimeout(timeoutTeclado);
+  document.getElementById("teclado").style.display = "grid";
+  reiniciarTimeout();
+}
+
+function agregarNumero(num) {
+  cantidadTemporal = (cantidadTemporal === "0") ? num : cantidadTemporal + num;
+  actualizarDisplay();
+  reiniciarTimeout();
+}
+
+function borrarNumero() {
+  cantidadTemporal = cantidadTemporal.slice(0, -1) || "0";
+  actualizarDisplay();
+  reiniciarTimeout();
+}
+
+function aceptarNumero() {
+  actualizarDisplay();
+  ocultarTeclado();
+}
+
+function ocultarTeclado() {
+  document.getElementById("teclado").style.display = "none";
+}
+
+function actualizarDisplay() {
+  document.getElementById("multiplicadorDisplay").textContent = `Cantidad por escaneo: ${cantidadTemporal}`;
+}
+
+function reiniciarTimeout() {
+  clearTimeout(timeoutTeclado);
+  timeoutTeclado = setTimeout(ocultarTeclado, 10000);
+}
+
+let timeoutTeclado = null;
+</script>
 <script>
   function cargarDesdeSheet() {
     const url = document.getElementById("sheetUrl").value;
