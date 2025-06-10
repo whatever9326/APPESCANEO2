@@ -94,8 +94,7 @@
   <div class="contenedor">
     <h1>Escaneo de Productos</h1>
 
-    <input type="file" id="archivoSKUs" accept=".csv" />
-    <input type="url" id="sheetUrl" placeholder="URL pública de Google Sheets">
+        <input type="url" id="sheetUrl" placeholder="URL pública de Google Sheets">
     <button onclick="cargarDesdeSheet()">Cargar</button>
 
     <select id="pedidoSelect"></select>
@@ -120,12 +119,10 @@
     <button onclick="exportarExcel()">Exportar Excel</button>
     <button onclick="exportarTodos()">Exportar todo</button>
     <button onclick="borrarProgreso()">Borrar progreso</button>
-    <button onclick="consultarCodigoBarras()">Consultar código</button>
-    <button onclick="guardarHistorial()">Guardar historial</button>
+        <button onclick="guardarHistorial()">Guardar historial</button>
     <button onclick="verHistorial()">Ver historial</button>
 
-    <div id="resultadoConsulta" class="error"></div>
-    <table id="pedidoTable"></table>
+        <table id="pedidoTable"></table>
     <div id="historial"></div>
   </div>
 
