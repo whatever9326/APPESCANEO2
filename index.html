@@ -132,69 +132,7 @@
   <audio id="sonido-error" preload="auto">
     <source src="error1.wav" type="audio/wav">
   </audio>
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js">document.getElementById("barcodeInput").addEventListener("keypress", function (e) {
-  if (e.key === "Enter") {
-    const codigo = e.target.value.trim();
-    e.target.value = "";
-    if (!codigo || !pedidoActual) return;
-
-    const producto = pedidoActual.find(p => p.codigo === codigo);
-    if (producto) {
-      const cantidad = parseInt(cantidadTemporal) || 1;
-      producto.escaneados += cantidad;
-      cantidadTemporal = "10";
-      actualizarDisplay();
-      mostrarPedido();
-
-      if (producto.escaneados === producto.cantidad) {
-        document.getElementById("sonido-ok").play();
-      } else if (producto.escaneados > producto.cantidad) {
-        document.getElementById("sonido-error").play();
-      }
-    } else {
-      document.getElementById("sonido-error").play();
-      mostrarMensaje("Código no encontrado");
-    }
-  }
-});
-
-function mostrarTeclado() {
-  clearTimeout(timeoutTeclado);
-  document.getElementById("teclado").style.display = "grid";
-  reiniciarTimeout();
-}
-
-function agregarNumero(num) {
-  cantidadTemporal = (cantidadTemporal === "0") ? num : cantidadTemporal + num;
-  actualizarDisplay();
-  reiniciarTimeout();
-}
-
-function borrarNumero() {
-  cantidadTemporal = cantidadTemporal.slice(0, -1) || "0";
-  actualizarDisplay();
-  reiniciarTimeout();
-}
-
-function aceptarNumero() {
-  actualizarDisplay();
-  ocultarTeclado();
-  document.getElementById("barcodeInput").focus();
-}
-
-function ocultarTeclado() {
-  document.getElementById("teclado").style.display = "none";
-}
-
-function actualizarDisplay() {
-  document.getElementById("multiplicadorDisplay").textContent = `Cantidad por escaneo: ${cantidadTemporal}`;
-}
-
-function reiniciarTimeout() {
-  clearTimeout(timeoutTeclado);
-  timeoutTeclado = setTimeout(ocultarTeclado, 10000);
-}
-</script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
 <script>
   let pedidos = {};
