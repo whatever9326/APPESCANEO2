@@ -1,3 +1,4 @@
+puedes checar por que no carga los pedidos
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -94,12 +95,12 @@
   <div class="contenedor">
     <h1>Escaneo de Productos</h1>
 
-        <input type="url" id="sheetUrl" placeholder="URL pública de Google Sheets">
+    <input type="url" id="sheetUrl" placeholder="URL pública de Google Sheets">
     <button onclick="cargarDesdeSheet()">Cargar</button>
 
     <select id="pedidoSelect"></select>
     <div class="num-input-display" id="multiplicadorDisplay" onclick="mostrarTeclado()">Cantidad por escaneo: 10</div>
-    <div class="teclado" id="teclado" style="display:none;">
+    <div class="teclado" id="teclado">
       <button onclick="agregarNumero('1')">1</button>
       <button onclick="agregarNumero('2')">2</button>
       <button onclick="agregarNumero('3')">3</button>
@@ -112,17 +113,20 @@
       <button onclick="borrarNumero()">←</button>
       <button onclick="agregarNumero('0')">0</button>
       <button onclick="aceptarNumero()">OK</button>
+      <button onclick="ocultarTeclado()">Cerrar</button>
     </div>
-    <input type="text" id="barcodeInput" placeholder="Escanea código de barras" autofocus>
 
+    <input type="text" id="barcodeInput" placeholder="Escanea código de barras" autofocus>
     <button onclick="exportarResumen()">Exportar resumen</button>
     <button onclick="exportarExcel()">Exportar Excel</button>
     <button onclick="exportarTodos()">Exportar todo</button>
-    <button onclick="borrarProgreso()">Borrar progreso</button>
-        <button onclick="guardarHistorial()">Guardar historial</button>
+    <button onclick="guardarHistorial()">Guardar historial</button>
     <button onclick="verHistorial()">Ver historial</button>
+    <button onclick="borrarProgreso()">Borrar progreso</button>
 
-        <table id="pedidoTable"></table>
+    <div id="errores" class="error"></div>
+    <div id="mensaje-temporal"></div>
+    <table id="pedidoTable"></table>
     <div id="historial"></div>
   </div>
 
@@ -132,146 +136,79 @@
   <audio id="sonido-error" preload="auto">
     <source src="error1.wav" type="audio/wav">
   </audio>
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js">document.getElementById("barcodeInput").addEventListener("keypress", function (e) {
-  if (e.key === "Enter") {
-    const codigo = e.target.value.trim();
-    e.target.value = "";
-    if (!codigo || !pedidoActual) return;
 
-    const producto = pedidoActual.find(p => p.codigo === codigo);
-    if (producto) {
-      const cantidad = parseInt(cantidadTemporal) || 1;
-      producto.escaneados += cantidad;
-      cantidadTemporal = "10";
-      actualizarDisplay();
-      mostrarPedido();
+  <script>
+    let pedidos = {};
+    let pedidoActual = null;
+    let historial = [];
+    let cantidadTemporal = "10";
+    let timeoutTeclado = null;
 
-      if (producto.escaneados === producto.cantidad) {
-        document.getElementById("sonido-ok").play();
-      } else if (producto.escaneados > producto.cantidad) {
-        document.getElementById("sonido-error").play();
-      }
-    } else {
-      document.getElementById("sonido-error").play();
-      mostrarMensaje("Código no encontrado");
+    function mostrarTeclado() {
+      clearTimeout(timeoutTeclado);
+      document.getElementById("teclado").style.display = "grid";
+      reiniciarTimeout();
     }
-  }
-});
 
-let cantidadTemporal = "10";
-let timeoutTeclado = null;
+    function agregarNumero(num) {
+      clearTimeout(timeoutTeclado);
+      cantidadTemporal = (cantidadTemporal === "0") ? num : cantidadTemporal + num;
+      actualizarDisplay();
+      reiniciarTimeout();
+    }
 
-function mostrarTeclado() {
-  clearTimeout(timeoutTeclado);
-  document.getElementById("teclado").style.display = "grid";
-  reiniciarTimeout();
-}
+    function borrarNumero() {
+      clearTimeout(timeoutTeclado);
+      cantidadTemporal = cantidadTemporal.slice(0, -1) || "0";
+      actualizarDisplay();
+      reiniciarTimeout();
+    }
 
-function agregarNumero(num) {
-  cantidadTemporal = (cantidadTemporal === "0") ? num : cantidadTemporal + num;
-  actualizarDisplay();
-  reiniciarTimeout();
-}
+    function aceptarNumero() {
+      document.getElementById("multiplicadorDisplay").textContent = `Cantidad por escaneo: ${cantidadTemporal}`;
+      document.getElementById("teclado").style.display = "none";
+    }
 
-function borrarNumero() {
-  cantidadTemporal = cantidadTemporal.slice(0, -1) || "0";
-  actualizarDisplay();
-  reiniciarTimeout();
-}
+    function ocultarTeclado() {
+      document.getElementById("teclado").style.display = "none";
+    }
 
-function aceptarNumero() {
-  actualizarDisplay();
-  ocultarTeclado();
-}
+    function actualizarDisplay() {
+      document.getElementById("multiplicadorDisplay").textContent = `Cantidad por escaneo: ${cantidadTemporal}`;
+    }
 
-function ocultarTeclado() {
-  document.getElementById("teclado").style.display = "none";
-}
+    function reiniciarTimeout() {
+      clearTimeout(timeoutTeclado);
+      timeoutTeclado = setTimeout(() => {
+        document.getElementById("teclado").style.display = "none";
+      }, 10000);
+    }
 
-function actualizarDisplay() {
-  document.getElementById("multiplicadorDisplay").textContent = `Cantidad por escaneo: ${cantidadTemporal}`;
-}
+    document.getElementById("barcodeInput").addEventListener("keypress", function (e) {
+      if (e.key === "Enter") {
+        const codigo = e.target.value.trim();
+        e.target.value = "";
+        if (!codigo || !pedidoActual) return;
 
-function reiniciarTimeout() {
-  clearTimeout(timeoutTeclado);
-  timeoutTeclado = setTimeout(ocultarTeclado, 10000);
-}
-</script>
+        const producto = pedidoActual.find(p => p.codigo === codigo);
+        if (producto) {
+          const cantidad = parseInt(cantidadTemporal) || 1;
+          producto.escaneados += cantidad;
+          cantidadTemporal = "10";
+          actualizarDisplay();
+          mostrarPedido();
 
-<script>
-  function cargarDesdeSheet() {
-    const url = document.getElementById("sheetUrl").value;
-    if (!url.includes("docs.google.com")) return mostrarMensaje("URL inválida");
-    const sheetID = url.match(/\/d\/(.*?)(\/|$)/)?.[1];
-    const apiUrl = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:csv`;
-
-    fetch(apiUrl)
-      .then(res => res.text())
-      .then(csv => Papa.parse(csv, { header: true }))
-      .then(result => {
-        pedidos = agruparPedidos(result.data);
-        llenarSelect();
-      })
-      .catch(() => mostrarMensaje("No se pudo cargar el archivo"));
-  }
-
-  let pedidos = {};
-  let pedidoActual = null;
-
-  function agruparPedidos(data) {
-    const grupos = {};
-    data.forEach(row => {
-      const id = row.PEDIDO?.trim();
-      if (!id) return;
-      if (!grupos[id]) grupos[id] = [];
-      grupos[id].push({
-        codigo: row.CODIGO?.trim(),
-        descripcion: row.DESCRIPCION?.trim(),
-        cantidad: parseInt(row.CANTIDAD),
-        escaneados: 0
-      });
+          if (producto.escaneados === producto.cantidad) {
+            document.getElementById("sonido-ok").play();
+          } else if (producto.escaneados > producto.cantidad) {
+            document.getElementById("sonido-error").play();
+          }
+        } else {
+          document.getElementById("sonido-error").play();
+          mostrarMensaje("Código no encontrado");
+        }
+      }
     });
-    return grupos;
-  }
-
-  function llenarSelect() {
-    const select = document.getElementById("pedidoSelect");
-    select.innerHTML = "";
-    Object.keys(pedidos).forEach(id => {
-      const option = document.createElement("option");
-      option.value = id;
-      option.textContent = id;
-      select.appendChild(option);
-    });
-    pedidoActual = pedidos[select.value];
-    select.onchange = () => {
-      pedidoActual = pedidos[select.value];
-      mostrarPedido();
-    };
-    mostrarPedido();
-  }
-
-  function mostrarPedido() {
-    const tabla = document.getElementById("pedidoTable");
-    tabla.innerHTML = "";
-    if (!pedidoActual) return;
-    const thead = document.createElement("thead");
-    thead.innerHTML = `<tr><th>Código</th><th>Descripción</th><th>Requerido</th><th>Escaneado</th></tr>`;
-    tabla.appendChild(thead);
-    const tbody = document.createElement("tbody");
-    pedidoActual.forEach(p => {
-      const row = document.createElement("tr");
-      if (p.escaneados === p.cantidad) row.classList.add("completo");
-      else if (p.escaneados > p.cantidad) row.classList.add("exceso");
-      row.innerHTML = `<td>${p.codigo}</td><td>${p.descripcion}</td><td>${p.cantidad}</td><td>${p.escaneados}</td>`;
-      tbody.appendChild(row);
-    });
-    tabla.appendChild(tbody);
-  }
-
-  function mostrarMensaje(msg, ok = false) {
-    alert(msg);
-  }
-</script>
+  </script>
 </body>
 </html>
