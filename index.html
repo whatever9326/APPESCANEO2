@@ -116,13 +116,6 @@
     </div>
 
     <input type="text" id="barcodeInput" placeholder="Escanea código de barras" autofocus>
-    <button onclick="exportarResumen()">Exportar resumen</button>
-    <button onclick="exportarExcel()">Exportar Excel</button>
-    <button onclick="exportarTodos()">Exportar todo</button>
-    <button onclick="guardarHistorial()">Guardar historial</button>
-    <button onclick="verHistorial()">Ver historial</button>
-    <button onclick="borrarProgreso()">Borrar progreso</button>
-
     <div id="errores" class="error"></div>
     <div id="mensaje-temporal"></div>
     <table id="pedidoTable"></table>
@@ -143,6 +136,68 @@
     let historial = [];
     let cantidadTemporal = "10";
     let timeoutTeclado = null;
+
+    function mostrarTeclado() {
+      clearTimeout(timeoutTeclado);
+      document.getElementById("teclado").style.display = "grid";
+      reiniciarTimeout();
+    }
+
+    function agregarNumero(num) {
+      cantidadTemporal = (cantidadTemporal === "0") ? num : cantidadTemporal + num;
+      actualizarDisplay();
+      reiniciarTimeout();
+    }
+
+    function borrarNumero() {
+      cantidadTemporal = cantidadTemporal.slice(0, -1) || "0";
+      actualizarDisplay();
+      reiniciarTimeout();
+    }
+
+    function aceptarNumero() {
+      actualizarDisplay();
+      ocultarTeclado();
+    }
+
+    function ocultarTeclado() {
+      document.getElementById("teclado").style.display = "none";
+    }
+
+    function actualizarDisplay() {
+      document.getElementById("multiplicadorDisplay").textContent = `Cantidad por escaneo: ${cantidadTemporal}`;
+    }
+
+    function reiniciarTimeout() {
+      clearTimeout(timeoutTeclado);
+      timeoutTeclado = setTimeout(ocultarTeclado, 10000);
+    }
+
+    document.getElementById("barcodeInput").addEventListener("keypress", function (e) {
+      if (e.key === "Enter") {
+        const codigo = e.target.value.trim();
+        e.target.value = "";
+        if (!codigo || !pedidoActual) return;
+
+        const producto = pedidoActual.find(p => p.codigo === codigo);
+        if (producto) {
+          const cantidad = parseInt(cantidadTemporal) || 1;
+          producto.escaneados += cantidad;
+          cantidadTemporal = "10";
+          actualizarDisplay();
+          mostrarPedido();
+
+          if (producto.escaneados === producto.cantidad) {
+            document.getElementById("sonido-ok").play();
+          } else if (producto.escaneados > producto.cantidad) {
+            document.getElementById("sonido-error").play();
+          }
+        } else {
+          document.getElementById("sonido-error").play();
+          mostrarMensaje("Código no encontrado");
+        }
+      }
+    });
 
     function cargarDesdeSheet() {
       const url = document.getElementById("sheetUrl").value;
@@ -212,14 +267,6 @@
         tbody.appendChild(row);
       });
       tabla.appendChild(tbody);
-    }
-
-    function mostrarMensaje(msg, ok = false) {
-      const div = document.getElementById("mensaje-temporal");
-      div.textContent = msg;
-      div.style.color = ok ? "green" : "red";
-      div.style.display = "block";
-      setTimeout(() => div.style.display = "none", 3000);
     }
   </script>
 </body>
