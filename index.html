@@ -1,221 +1,255 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Escaneo de Pedidos - Demo</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon-192.png" />
+  <meta name="theme-color" content="#1976d2" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #fafafa;
+    }
+    .contenedor {
+      padding: 1rem;
+      background: white;
+      max-width: 800px;
+      margin: auto;
+    }
+    h1 {
+      font-size: 1.5rem;
+      text-align: center;
+    }
+    input[type="file"], input[type="text"], input[type="url"], select, button, .num-input-display {
+      width: 100%; max-width: 600px;
+      margin: 0.5rem auto;
+      display: block;
+      font-size: 1.1rem;
+      padding: 0.5rem;
+    }
+    .num-input-display {
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      background: #fff;
+      text-align: center;
+      cursor: pointer;
+    }
+    .teclado {
+      display: none;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+      max-width: 600px;
+      margin: 0.5rem auto;
+    }
+    .teclado button {
+      font-size: 1.2rem;
+      padding: 1rem;
+    }
+    button {
+      cursor: pointer;
+      background: #1976d2;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+    button:hover { background: #125aa0; }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 1rem;
+      font-size: 0.95rem;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+    th { background: #f2f2f2; }
+    .completo { background: #c8e6c9; }
+    .exceso { background: #ffcdd2; }
+    .error {
+      color: red;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+    }
+    #historial {
+      padding-top: 1rem;
+      font-size: 0.9rem;
+    }
+    #mensaje-temporal {
+      color: red;
+      text-align: center;
+      margin-top: 1rem;
+      font-weight: bold;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="contenedor">
+    <h1>Escaneo de Productos</h1>
 
- 
- <!DOCTYPE html>
- <html lang="es">
- <head>
-   <meta charset="UTF-8">
-   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <title>Escaneo de Pedidos - Demo</title>
-   <link rel="manifest" href="manifest.json" />
-   <link rel="icon" href="icon-192.png" />
-   <meta name="theme-color" content="#1976d2" />
-   <style>
-     * { box-sizing: border-box; }
-     body {
-       font-family: sans-serif;
-       margin: 0;
-       padding: 0;
-       background: #fafafa;
-     }
-     .contenedor {
-       padding: 1rem;
-       background: white;
-       max-width: 800px;
-       margin: auto;
-     }
-     h1 {
-diff --git a/index.html b/index.html
-index a081d7c11feec9ce925d50a9e3a9b5b3c6aa6c6e..52250822e9186b607c6f06504de221bf5f6fee3d 100644
---- a/index.html
-+++ b/index.html
-@@ -50,168 +49,184 @@
-     }
-     th, td {
-       border: 1px solid #ddd;
-       padding: 8px;
-       text-align: center;
-     }
-     th { background: #f2f2f2; }
-     .completo { background: #c8e6c9; }
-     .exceso { background: #ffcdd2; }
-     .error {
-       color: red;
-       margin-top: 1rem;
-       font-size: 0.9rem;
-     }
-     #historial {
-       padding-top: 1rem;
-       font-size: 0.9rem;
-     }
-     #mensaje-temporal {
-       color: red;
-       text-align: center;
-       margin-top: 1rem;
-       font-weight: bold;
-       display: none;
-     }
-+    #multiplicador-container { display: flex; gap: 0.5rem; max-width: 600px; margin: 0.5rem auto; }
-+    #multiplicador-container button { flex: 1; }
-+    .multiplicador-btn.activo { background: #125aa0; }
-   </style>
- </head>
- <body>
-   <div class="contenedor">
--    <h1>Escaneo de Productos</h1>
-+    <h1>Escaneo de Pedidos</h1>
- 
-     <input type="url" id="sheetUrl" placeholder="URL pública de Google Sheets">
-     <button onclick="cargarDesdeSheet()">Cargar</button>
- 
-     <select id="pedidoSelect"></select>
--    <input type="number" id="multiplicador" value="10" min="1" placeholder="Cantidad por escaneo">
-+    <div id="multiplicador-container">
-+      <button class="multiplicador-btn" data-value="1" onclick="setMultiplicador(1)">1</button>
-+      <button class="multiplicador-btn" data-value="5" onclick="setMultiplicador(5)">5</button>
-+      <button class="multiplicador-btn" data-value="10" onclick="setMultiplicador(10)">10</button>
-+    </div>
-     <input type="text" id="barcodeInput" placeholder="Escanea código de barras" autofocus>
-     <button onclick="exportarResumen()">Exportar resumen</button>
-     <button onclick="exportarExcel()">Exportar Excel</button>
-     <button onclick="exportarTodos()">Exportar todo</button>
-     <button onclick="guardarHistorial()">Guardar historial</button>
-     <button onclick="verHistorial()">Ver historial</button>
-     <button onclick="borrarProgreso()">Borrar progreso</button>
- 
-     <div id="errores" class="error"></div>
-     <div id="mensaje-temporal"></div>
-     <table id="pedidoTable"></table>
-     <div id="historial"></div>
-   </div>
- 
-   <audio id="sonido-ok" preload="auto">
-     <source src="ok.wav" type="audio/wav">
-   </audio>
-   <audio id="sonido-error" preload="auto">
-     <source src="error1.wav" type="audio/wav">
-   </audio>
- 
-   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-   <script>
-     let pedidos = {};
-     let pedidoActual = null;
-     let historial = [];
- 
-+    let multiplicador = 10;
-+    document.addEventListener("DOMContentLoaded", () => setMultiplicador(multiplicador));
-     function cargarDesdeSheet() {
-       const url = document.getElementById("sheetUrl").value;
-       if (!url.includes("docs.google.com")) return mostrarMensaje("URL inválida");
- 
-       const sheetID = url.match(/\/d\/(.*?)(\/|$)/)?.[1];
-       const apiUrl = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:csv`;
- 
-       fetch(apiUrl)
-         .then(res => res.text())
-         .then(csv => Papa.parse(csv, { header: true }))
-         .then(result => {
-           pedidos = agruparPedidos(result.data);
-           llenarSelect();
-         })
-         .catch(() => mostrarMensaje("No se pudo cargar el archivo"));
-     }
- 
-     function agruparPedidos(data) {
-       const grupos = {};
-       data.forEach(row => {
-         const id = row.PEDIDO?.trim();
-         if (!id) return;
-         if (!grupos[id]) grupos[id] = [];
-         grupos[id].push({
-           codigo: row.CODIGO?.trim(),
-           descripcion: row.DESCRIPCION?.trim(),
-           cantidad: parseInt(row.CANTIDAD),
-           escaneados: 0
-         });
--      });
--      return grupos;
--    }
-+        });
-+        return grupos;
-+      }
-+
-+      function setMultiplicador(val) {
-+        multiplicador = val;
-+        document.querySelectorAll(".multiplicador-btn").forEach(b => b.classList.remove("activo"));
-+        const btn = document.querySelector(`.multiplicador-btn[data-value="${val}"]`);
-+        if (btn) btn.classList.add("activo");
-+      }
- 
-     function llenarSelect() {
-       const select = document.getElementById("pedidoSelect");
-       select.innerHTML = "";
-       Object.keys(pedidos).forEach(id => {
-         const option = document.createElement("option");
-         option.value = id;
-         option.textContent = id;
-         select.appendChild(option);
-       });
-       pedidoActual = pedidos[select.value];
-       select.onchange = () => {
-         pedidoActual = pedidos[select.value];
-         mostrarPedido();
-       };
-       mostrarPedido();
-     }
- 
-     function mostrarPedido() {
-       const tabla = document.getElementById("pedidoTable");
-       tabla.innerHTML = "";
-       if (!pedidoActual) return;
- 
-       const thead = document.createElement("thead");
-       thead.innerHTML = `<tr><th>Código</th><th>Descripción</th><th>Requerido</th><th>Escaneado</th></tr>`;
-       tabla.appendChild(thead);
- 
-       const tbody = document.createElement("tbody");
-       pedidoActual.forEach(p => {
-         const row = document.createElement("tr");
-         if (p.escaneados === p.cantidad) row.classList.add("completo");
-         else if (p.escaneados > p.cantidad) row.classList.add("exceso");
-         row.innerHTML = `<td>${p.codigo}</td><td>${p.descripcion}</td><td>${p.cantidad}</td><td>${p.escaneados}</td>`;
-         tbody.appendChild(row);
-       });
-       tabla.appendChild(tbody);
-     }
- 
-     document.getElementById("barcodeInput").addEventListener("keypress", function (e) {
-       if (e.key === "Enter") {
-         const codigo = e.target.value.trim();
-         e.target.value = "";
-         if (!codigo || !pedidoActual) return;
- 
-         const producto = pedidoActual.find(p => p.codigo === codigo);
-         if (producto) {
--          const cantidad = parseInt(document.getElementById("multiplicador").value) || 1;
-+          const cantidad = multiplicador;
-           producto.escaneados += cantidad;
-           mostrarPedido();
- 
-           if (producto.escaneados === producto.cantidad) {
-             document.getElementById("sonido-ok").play();
-           } else if (producto.escaneados > producto.cantidad) {
-             document.getElementById("sonido-error").play();
-           }
-         } else {
-           document.getElementById("sonido-error").play();
-           mostrarMensaje("Código no encontrado");
-         }
-       }
-     });
- 
-     function exportarResumen() {
-       if (!pedidoActual) return;
-       const filas = pedidoActual.map(p => [p.codigo, p.descripcion, p.cantidad, p.escaneados]);
-       const csv = ["CODIGO,DESCRIPCION,CANTIDAD,ESCANEADOS", ...filas.map(f => f.join(","))].join("\n");
-       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-       const url = URL.createObjectURL(blob);
-       const link = document.createElement("a");
-       link.href = url;
-       link.download = "resumen.csv";
-       link.click();
+        <input type="url" id="sheetUrl" placeholder="URL pública de Google Sheets">
+    <button onclick="cargarDesdeSheet()">Cargar</button>
+
+    
+    <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; max-width: 600px; margin: 0.5rem auto;">
+  <button onclick="setMultiplicador(1)">x1</button>
+  <button onclick="setMultiplicador(5)">x5</button>
+  <button onclick="setMultiplicador(10)">x10</button>
+  <button onclick="setMultiplicador(20)">x20</button>
+  <button onclick="setMultiplicador(50)">x50</button>
+  <button onclick="setMultiplicador(100)">x100</button>
+</div>
+<div style="text-align: center; font-weight: bold;" id="displayMultiplicador">Cantidad por escaneo: 10</div>
+    <input type="text" id="barcodeInput" placeholder="Escanea código de barras" autofocus>
+
+    <button onclick="exportarResumen()">Exportar resumen</button>
+    <button onclick="exportarExcel()">Exportar Excel</button>
+    <button onclick="exportarTodos()">Exportar todo</button>
+    <button onclick="borrarProgreso()">Borrar progreso</button>
+        <button onclick="guardarHistorial()">Guardar historial</button>
+    <button onclick="verHistorial()">Ver historial</button>
+
+        <table id="pedidoTable"></table>
+    <div id="historial"></div>
+  </div>
+
+  <audio id="sonido-ok" preload="auto">
+    <source src="ok.wav" type="audio/wav">
+  </audio>
+  <audio id="sonido-error" preload="auto">
+    <source src="error1.wav" type="audio/wav">
+  </audio>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js">document.getElementById("multiplicadorDisplay").addEventListener("click", mostrarTeclado);
+
+function mostrarTeclado() {
+  clearTimeout(timeoutTeclado);
+  document.getElementById("teclado").style.display = "grid";
+  reiniciarTimeout();
+}
+
+function agregarNumero(num) {
+  const input = document.getElementById("multiplicador");
+  input.value = (input.value === "0") ? num : input.value + num;
+  reiniciarTimeout();
+}
+
+function borrarNumero() {
+  const input = document.getElementById("multiplicador");
+  input.value = input.value.slice(0, -1) || "0";
+  reiniciarTimeout();
+}
+
+function aceptarNumero() {
+  document.getElementById("teclado").style.display = "none";
+  document.getElementById("barcodeInput").focus();
+}
+
+function reiniciarTimeout() {
+  clearTimeout(timeoutTeclado);
+  timeoutTeclado = setTimeout(() => {
+    document.getElementById("teclado").style.display = "none";
+  }, 10000);
+}
+
+function setMultiplicador(valor) {
+  cantidadTemporal = valor.toString();
+  document.getElementById("displayMultiplicador").textContent = `Cantidad por escaneo: ${valor}`;
+  document.getElementById("barcodeInput").focus();
+}
+
+</script>
+
+<script>
+  let pedidos = {};
+  let pedidoActual = null;
+  let historial = [];
+  let cantidadTemporal = "10";
+  let timeoutTeclado = null;
+
+  function cargarDesdeSheet() {
+    const url = document.getElementById("sheetUrl").value;
+    if (!url.includes("docs.google.com")) return mostrarMensaje("URL inválida");
+    const sheetID = url.match(/\/d\/(.*?)(\/|$)/)?.[1];
+    const apiUrl = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:csv`;
+
+    fetch(apiUrl)
+      .then(res => res.text())
+      .then(csv => Papa.parse(csv, { header: true }))
+      .then(result => {
+        pedidos = agruparPedidos(result.data);
+        llenarSelect();
+      })
+      .catch(() => mostrarMensaje("No se pudo cargar el archivo"));
+  }
+
+  let pedidos = {};
+  let pedidoActual = null;
+
+  function agruparPedidos(data) {
+    const grupos = {};
+    data.forEach(row => {
+      const id = row.PEDIDO?.trim();
+      if (!id) return;
+      if (!grupos[id]) grupos[id] = [];
+      grupos[id].push({
+        codigo: row.CODIGO?.trim(),
+        descripcion: row.DESCRIPCION?.trim(),
+        cantidad: parseInt(row.CANTIDAD),
+        escaneados: 0
+      });
+    });
+    return grupos;
+  }
+
+  function llenarSelect() {
+    const select = document.getElementById("pedidoSelect");
+    select.innerHTML = "";
+    Object.keys(pedidos).forEach(id => {
+      const option = document.createElement("option");
+      option.value = id;
+      option.textContent = id;
+      select.appendChild(option);
+    });
+    pedidoActual = pedidos[select.value];
+    select.onchange = () => {
+      pedidoActual = pedidos[select.value];
+      mostrarPedido();
+    };
+    mostrarPedido();
+  }
+
+  function mostrarPedido() {
+    const tabla = document.getElementById("pedidoTable");
+    tabla.innerHTML = "";
+    if (!pedidoActual) return;
+    const thead = document.createElement("thead");
+    thead.innerHTML = `<tr><th>Código</th><th>Descripción</th><th>Requerido</th><th>Escaneado</th></tr>`;
+    tabla.appendChild(thead);
+    const tbody = document.createElement("tbody");
+    pedidoActual.forEach(p => {
+      const row = document.createElement("tr");
+      if (p.escaneados === p.cantidad) row.classList.add("completo");
+      else if (p.escaneados > p.cantidad) row.classList.add("exceso");
+      row.innerHTML = `<td>${p.codigo}</td><td>${p.descripcion}</td><td>${p.cantidad}</td><td>${p.escaneados}</td>`;
+      tbody.appendChild(row);
+    });
+    tabla.appendChild(tbody);
+  }
+
+  function mostrarMensaje(msg, ok = false) {
+    const div = document.getElementById("mensaje-temporal");
+    div.textContent = msg;
+    div.style.color = ok ? "green" : "red";
+    div.style.display = "block";
+    setTimeout(() => div.style.display = "none", 3000);
+  }
+</script>
+</body>
+</html>
