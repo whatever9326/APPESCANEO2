@@ -125,7 +125,12 @@
   <audio id="sonido-error" preload="auto">
     <source src="error1.wav" type="audio/wav">
   </audio>
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js">function setMultiplicador(valor) {
+  cantidadTemporal = valor.toString();
+  document.getElementById("displayMultiplicador").textContent = `Cantidad por escaneo: ${valor}`;
+  document.getElementById("barcodeInput").focus();
+}
+</script>
 
 <script>
   
