@@ -94,28 +94,27 @@
   <div class="contenedor">
     <h1>Escaneo de Productos</h1>
 
-        <input type="url" id="sheetUrl" placeholder="URL pública de Google Sheets">
+    <input type="url" id="sheetUrl" placeholder="URL pública de Google Sheets">
     <button onclick="cargarDesdeSheet()">Cargar</button>
     <select id="pedidoSelect"></select>
 
-    
     <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; max-width: 600px; margin: 0.5rem auto;">
-  <button onclick="setMultiplicador(1)">x1</button>
-  <button onclick="setMultiplicador(5)">x5</button>
-  <button onclick="setMultiplicador(10)">x10</button>
-  <button onclick="setMultiplicador(150)">x150</button>
-</div>
-<div style="text-align: center; font-weight: bold;" id="displayMultiplicador">Cantidad por escaneo: 10</div>
+      <button onclick="setMultiplicador(1)">x1</button>
+      <button onclick="setMultiplicador(5)">x5</button>
+      <button onclick="setMultiplicador(10)">x10</button>
+      <button onclick="setMultiplicador(150)">x150</button>
+    </div>
+    <div style="text-align: center; font-weight: bold;" id="displayMultiplicador">Cantidad por escaneo: 10</div>
     <input type="text" id="barcodeInput" placeholder="Escanea código de barras" autofocus>
 
     <button onclick="exportarResumen()">Exportar resumen</button>
     <button onclick="exportarExcel()">Exportar Excel</button>
     <button onclick="exportarTodos()">Exportar todo</button>
     <button onclick="borrarProgreso()">Borrar progreso</button>
-        <button onclick="guardarHistorial()">Guardar historial</button>
+    <button onclick="guardarHistorial()">Guardar historial</button>
     <button onclick="verHistorial()">Ver historial</button>
 
-        <table id="pedidoTable"></table>
+    <table id="pedidoTable"></table>
     <div id="mensaje-temporal"></div>
     <div id="historial"></div>
   </div>
@@ -126,235 +125,241 @@
   <audio id="sonido-error" preload="auto">
     <source src="error1.wav" type="audio/wav">
   </audio>
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-<script>
-function setMultiplicador(valor) {
-  cantidadTemporal = valor.toString();
-  document.getElementById("displayMultiplicador").textContent = `Cantidad por escaneo: ${valor}`;
-  document.getElementById("barcodeInput").focus();
-}
-</script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script>
+    let historial = [];
+    let cantidadTemporal = "10";
+    let timeoutTeclado = null;
+    let pedidos = {};
+    let pedidoActual = null;
 
-<script>
-  
-  let historial = [];
-  let cantidadTemporal = "10";
-  let timeoutTeclado = null;
+    function setMultiplicador(valor) {
+      cantidadTemporal = valor.toString();
+      document.getElementById("displayMultiplicador").textContent = `Cantidad por escaneo: ${valor}`;
+      document.getElementById("barcodeInput").focus();
+    }
 
-  function cargarDesdeSheet() {
-    const url = document.getElementById("sheetUrl").value;
-    if (!url.includes("docs.google.com")) return mostrarMensaje("URL inválida");
-    const sheetID = url.match(/\/d\/(.*?)(\/|$)/)?.[1];
-    const apiUrl = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:csv`;
+    function cargarDesdeSheet() {
+      const url = document.getElementById("sheetUrl").value;
+      if (!url.includes("docs.google.com")) return mostrarMensaje("URL inválida");
+      const sheetID = url.match(/\/d\/(.*?)(\/|$)/)?.[1];
+      if (!sheetID) return mostrarMensaje("No se pudo extraer el ID del documento.");
+      const apiUrl = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:csv`;
 
-    fetch(apiUrl)
-      .then(res => res.text())
-      .then(csv => Papa.parse(csv, { header: true }))
-      .then(result => {
-        pedidos = agruparPedidos(result.data);
-        llenarSelect();
-      })
-      .catch(() => mostrarMensaje("No se pudo cargar el archivo"));
-  }
+      fetch(apiUrl)
+        .then(res => res.text())
+        .then(csv => Papa.parse(csv, { header: true }))
+        .then(result => {
+          pedidos = agruparPedidos(result.data);
+          llenarSelect();
+        })
+        .catch(err => {
+          console.error("Error al cargar el archivo:", err);
+          mostrarMensaje("No se pudo cargar el archivo");
+        });
+    }
 
-  let pedidos = {};
-  let pedidoActual = null;
-
-  function agruparPedidos(data) {
-    const grupos = {};
-    data.forEach(row => {
-      const id = row.PEDIDO?.trim();
-      if (!id) return;
-      if (!grupos[id]) grupos[id] = [];
-      grupos[id].push({
-        codigo: row.CODIGO?.trim(),
-        descripcion: row.DESCRIPCION?.trim(),
-        cantidad: parseInt(row.CANTIDAD),
-        escaneados: 0
+    function agruparPedidos(data) {
+      const grupos = {};
+      data.forEach(row => {
+        const id = row.PEDIDO?.trim();
+        if (!id) return;
+        if (!grupos[id]) grupos[id] = [];
+        grupos[id].push({
+          codigo: row.CODIGO?.trim(),
+          descripcion: row.DESCRIPCION?.trim(),
+          cantidad: parseInt(row.CANTIDAD),
+          escaneados: 0
+        });
       });
-    });
-    return grupos;
-  }
+      return grupos;
+    }
 
-  function llenarSelect() {
-    const select = document.getElementById("pedidoSelect");
-    select.innerHTML = "";
-    Object.keys(pedidos).forEach(id => {
-      const option = document.createElement("option");
-      option.value = id;
-      option.textContent = id;
-      select.appendChild(option);
-    });
-    pedidoActual = pedidos[select.value];
-    select.onchange = () => {
+    function llenarSelect() {
+      const select = document.getElementById("pedidoSelect");
+      select.innerHTML = "";
+      Object.keys(pedidos).forEach(id => {
+        const option = document.createElement("option");
+        option.value = id;
+        option.textContent = id;
+        select.appendChild(option);
+      });
       pedidoActual = pedidos[select.value];
-      mostrarPedido();
-    };
-    mostrarPedido();
-  }
-
-  function mostrarPedido() {
-    const tabla = document.getElementById("pedidoTable");
-    tabla.innerHTML = "";
-    if (!pedidoActual) return;
-    const thead = document.createElement("thead");
-    thead.innerHTML = `<tr><th>Código</th><th>Descripción</th><th>Requerido</th><th>Escaneado</th><th>Acciones</th></tr>`;
-    tabla.appendChild(thead);
-    const tbody = document.createElement("tbody");
-    pedidoActual.forEach(p => {
-      const row = document.createElement("tr");
-      if (p.escaneados === p.cantidad) row.classList.add("completo");
-      else if (p.escaneados > p.cantidad) row.classList.add("exceso");
-      row.innerHTML = `<td>${p.codigo}</td><td>${p.descripcion}</td><td>${p.cantidad}</td><td>${p.escaneados}</td>
-<td>
-  <button onclick="confirmarManual('${p.codigo}')">✔️</button>
-  <button onclick="editarEscaneo('${p.codigo}')">✏️</button>
-  <button onclick="eliminarEscaneo('${p.codigo}')">🗑️</button>
-</td>`;
-      tbody.appendChild(row);
-    });
-    tabla.appendChild(tbody);
-  }
-
-  function mostrarMensaje(msg, ok = false) {
-    const div = document.getElementById("mensaje-temporal");
-    div.textContent = msg;
-    div.style.color = ok ? "green" : "red";
-    div.style.display = "block";
-    setTimeout(() => div.style.display = "none", 3000);
-  }
-
-  function confirmarManual(codigo) {
-    const producto = pedidoActual.find(p => p.codigo === codigo);
-    if (producto) {
-      producto.escaneados = producto.cantidad;
+      select.onchange = () => {
+        pedidoActual = pedidos[select.value];
+        mostrarPedido();
+      };
       mostrarPedido();
     }
-  }
 
-  function editarEscaneo(codigo) {
-    const producto = pedidoActual.find(p => p.codigo === codigo);
-    if (producto) {
-      const nuevoValor = prompt("Nueva cantidad escaneada:", producto.escaneados);
-      const cantidad = parseInt(nuevoValor);
-      if (!isNaN(cantidad) && cantidad >= 0) {
-        producto.escaneados = cantidad;
+    function mostrarPedido() {
+      const tabla = document.getElementById("pedidoTable");
+      tabla.innerHTML = "";
+      if (!pedidoActual) return;
+      const thead = document.createElement("thead");
+      thead.innerHTML = `<tr><th>Código</th><th>Descripción</th><th>Requerido</th><th>Escaneado</th><th>Acciones</th></tr>`;
+      tabla.appendChild(thead);
+      const tbody = document.createElement("tbody");
+      pedidoActual.forEach(p => {
+        const row = document.createElement("tr");
+        if (p.escaneados === p.cantidad) row.classList.add("completo");
+        else if (p.escaneados > p.cantidad) row.classList.add("exceso");
+        row.innerHTML = `<td>${p.codigo}</td><td>${p.descripcion}</td><td>${p.cantidad}</td><td>${p.escaneados}</td>
+        <td>
+          <button onclick="confirmarManual('${p.codigo}')">✔️</button>
+          <button onclick="editarEscaneo('${p.codigo}')">✏️</button>
+          <button onclick="eliminarEscaneo('${p.codigo}')">🗑️</button>
+        </td>`;
+        tbody.appendChild(row);
+      });
+      tabla.appendChild(tbody);
+    }
+
+    function mostrarMensaje(msg, ok = false) {
+      const div = document.getElementById("mensaje-temporal");
+      div.textContent = msg;
+      div.style.color = ok ? "green" : "red";
+      div.style.display = "block";
+      setTimeout(() => div.style.display = "none", 3000);
+    }
+
+    function confirmarManual(codigo) {
+      const producto = pedidoActual.find(p => p.codigo === codigo);
+      if (producto) {
+        producto.escaneados = producto.cantidad;
         mostrarPedido();
       }
     }
-  }
 
-  function eliminarEscaneo(codigo) {
-    const producto = pedidoActual.find(p => p.codigo === codigo);
-    if (producto) {
-      producto.escaneados = 0;
-      mostrarPedido();
-    }
-  }
-document.getElementById("barcodeInput").addEventListener("keypress", function (e) {
-  if (e.key === "Enter") {
-    const codigo = e.target.value.trim();
-    e.target.value = "";
-    if (!codigo || !pedidoActual) return;
-
-    const producto = pedidoActual.find(p => p.codigo === codigo);
-    if (producto) {
-      const cantidad = parseInt(cantidadTemporal) || 1;
-      producto.escaneados += cantidad;
-      mostrarPedido();
-
-      if (producto.escaneados === producto.cantidad) {
-        document.getElementById("sonido-ok").play();
-      } else if (producto.escaneados > producto.cantidad) {
-        document.getElementById("sonido-error").play();
+    function editarEscaneo(codigo) {
+      const producto = pedidoActual.find(p => p.codigo === codigo);
+      if (producto) {
+        const nuevoValor = prompt("Nueva cantidad escaneada:", producto.escaneados);
+        const cantidad = parseInt(nuevoValor);
+        if (!isNaN(cantidad) && cantidad >= 0) {
+          producto.escaneados = cantidad;
+          mostrarPedido();
+        }
       }
-    } else {
-      document.getElementById("sonido-error").play();
-      mostrarMensaje("Código no encontrado");
     }
-  }
-});
 
-function exportarResumen() {
-  if (!pedidoActual) return;
-  const filas = pedidoActual.map(p => [p.codigo, p.descripcion, p.cantidad, p.escaneados]);
-  const csv = ["CODIGO,DESCRIPCION,CANTIDAD,ESCANEADOS", ...filas.map(f => f.join(","))].join("
-");
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "resumen.csv";
-  link.click();
-}
-
-function exportarExcel() {
-  if (!pedidoActual) return;
-  const data = pedidoActual.map(p => ({
-    CODIGO: p.codigo,
-    DESCRIPCION: p.descripcion,
-    CANTIDAD: p.cantidad,
-    ESCANEADOS: p.escaneados
-  }));
-  const ws = XLSX.utils.json_to_sheet(data);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Resumen");
-  XLSX.writeFile(wb, "resumen.xlsx");
-}
-
-function exportarTodos() {
-  const todos = [];
-  for (const [pedidoId, productos] of Object.entries(pedidos)) {
-    productos.forEach(p => {
-      todos.push({ PEDIDO: pedidoId, CODIGO: p.codigo, DESCRIPCION: p.descripcion, CANTIDAD: p.cantidad, ESCANEADOS: p.escaneados });
-    });
-  }
-  const ws = XLSX.utils.json_to_sheet(todos);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Todos");
-  XLSX.writeFile(wb, "todos_los_pedidos.xlsx");
-}
-
-function guardarHistorial() {
-  if (!pedidoActual) return;
-  historial.push({ fecha: new Date().toLocaleString(), pedido: JSON.parse(JSON.stringify(pedidoActual)) });
-  try {
-    localStorage.setItem("historial", JSON.stringify(historial));
-    mostrarMensaje("Historial guardado", true);
-  } catch (e) {
-    if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
-      mostrarMensaje("No se pudo guardar el historial: almacenamiento lleno");
-    } else {
-      mostrarMensaje("Error al guardar historial");
+    function eliminarEscaneo(codigo) {
+      const producto = pedidoActual.find(p => p.codigo === codigo);
+      if (producto) {
+        producto.escaneados = 0;
+        mostrarPedido();
+      }
     }
-  }
-}
 
-function verHistorial() {
-  const div = document.getElementById("historial");
-  historial = JSON.parse(localStorage.getItem("historial")) || [];
-  div.innerHTML = historial.map(entry => {
-    const lista = entry.pedido.map(p => `${p.codigo}: ${p.escaneados}/${p.cantidad}`).join("<br>");
-    return `<div><strong>${entry.fecha}</strong><br>${lista}</div><hr>`;
-  }).join("");
-}
+    document.getElementById("barcodeInput").addEventListener("keypress", function (e) {
+      if (e.key === "Enter") {
+        const codigo = e.target.value.trim();
+        e.target.value = "";
+        if (!codigo || !pedidoActual) return;
 
-function borrarProgreso() {
-  if (!pedidoActual) return;
-  pedidoActual.forEach(p => p.escaneados = 0);
-  mostrarPedido();
-  mostrarMensaje("Progreso borrado", true);
-}
+        const producto = pedidoActual.find(p => p.codigo === codigo);
+        if (producto) {
+          const cantidad = parseInt(cantidadTemporal) || 1;
+          producto.escaneados += cantidad;
+          mostrarPedido();
 
-</script>
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('service-worker.js')
-        .then(reg => console.log('Service Worker registrado:', reg.scope))
-        .catch(err => console.error('Error al registrar Service Worker:', err));
+          if (producto.escaneados === producto.cantidad) {
+            document.getElementById("sonido-ok").play();
+          } else if (producto.escaneados > producto.cantidad) {
+            document.getElementById("sonido-error").play();
+          }
+        } else {
+          document.getElementById("sonido-error").play();
+          mostrarMensaje("Código no encontrado");
+        }
+      }
     });
-  }
-</script>
+
+    function exportarResumen() {
+      if (!pedidoActual) return;
+      const filas = pedidoActual.map(p => [p.codigo, p.descripcion, p.cantidad, p.escaneados]);
+      const csv = ["CODIGO,DESCRIPCION,CANTIDAD,ESCANEADOS", ...filas.map(f => f.join(","))].join("\n");
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "resumen.csv";
+      link.click();
+    }
+
+    function exportarExcel() {
+      if (!pedidoActual) return;
+      const data = pedidoActual.map(p => ({
+        CODIGO: p.codigo,
+        DESCRIPCION: p.descripcion,
+        CANTIDAD: p.cantidad,
+        ESCANEADOS: p.escaneados
+      }));
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Resumen");
+      XLSX.writeFile(wb, "resumen.xlsx");
+    }
+
+    function exportarTodos() {
+      const todos = [];
+      for (const [pedidoId, productos] of Object.entries(pedidos)) {
+        productos.forEach(p => {
+          todos.push({
+            PEDIDO: pedidoId,
+            CODIGO: p.codigo,
+            DESCRIPCION: p.descripcion,
+            CANTIDAD: p.cantidad,
+            ESCANEADOS: p.escaneados
+          });
+        });
+      }
+      const ws = XLSX.utils.json_to_sheet(todos);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Todos");
+      XLSX.writeFile(wb, "todos_los_pedidos.xlsx");
+    }
+
+    function guardarHistorial() {
+      if (!pedidoActual) return;
+      historial.push({ fecha: new Date().toLocaleString(), pedido: JSON.parse(JSON.stringify(pedidoActual)) });
+      try {
+        localStorage.setItem("historial", JSON.stringify(historial));
+        mostrarMensaje("Historial guardado", true);
+      } catch (e) {
+        if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+          mostrarMensaje("No se pudo guardar el historial: almacenamiento lleno");
+        } else {
+          mostrarMensaje("Error al guardar historial");
+        }
+      }
+    }
+
+    function verHistorial() {
+      const div = document.getElementById("historial");
+      historial = JSON.parse(localStorage.getItem("historial")) || [];
+      div.innerHTML = historial.map(entry => {
+        const lista = entry.pedido.map(p => `${p.codigo}: ${p.escaneados}/${p.cantidad}`).join("<br>");
+        return `<div><strong>${entry.fecha}</strong><br>${lista}</div><hr>`;
+      }).join("");
+    }
+
+    function borrarProgreso() {
+      if (!pedidoActual) return;
+      pedidoActual.forEach(p => p.escaneados = 0);
+      mostrarPedido();
+      mostrarMensaje("Progreso borrado", true);
+    }
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js')
+          .then(reg => console.log('Service Worker registrado:', reg.scope))
+          .catch(err => console.error('Error al registrar Service Worker:', err));
+      });
+    }
+  </script>
 </body>
 </html>
