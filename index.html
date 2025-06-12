@@ -138,22 +138,22 @@ function setMultiplicador(valor) {
 
 <script>
   
-  let historial = [];
-  let cantidadTemporal = "10";
-  let timeoutTeclado = null;
+function cargarDesdeSheet() {
+      const url = document.getElementById("sheetUrl").value;
+      if (!url.includes("docs.google.com")) return mostrarMensaje("URL inválida");
 
-  function cargarDesdeSheet() {
-    const url = document.getElementById("sheetUrl").value;
-    if (!url.includes("docs.google.com")) return mostrarMensaje("URL inválida");
-   const sheetID = url.match(/\/d\/(.*?)(\/|$)/)?.[1];
-if (!sheetID) return mostrarMensaje("No se pudo extraer el ID del documento.");
-    const apiUrl = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:csv`;
+      const sheetID = url.match(/\/d\/(.*?)(\/|$)/)?.[1];
+      const apiUrl = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:csv`;
 
-    fetch(apiUrl)
-  .then(res => {
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    return res.text();
-  })
+      fetch(apiUrl)
+        .then(res => res.text())
+        .then(csv => Papa.parse(csv, { header: true }))
+        .then(result => {
+          pedidos = agruparPedidos(result.data);
+          llenarSelect();
+        })
+        .catch(() => mostrarMensaje("No se pudo cargar el archivo"));
+    }
   .then(csv => Papa.parse(csv, { header: true }))
   .then(result => {
     pedidos = agruparPedidos(result.data);
