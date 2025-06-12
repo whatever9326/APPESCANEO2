@@ -127,7 +127,6 @@
     <source src="error1.wav" type="audio/wav">
   </audio>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
- <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 function setMultiplicador(valor) {
   cantidadTemporal = valor.toString();
@@ -138,38 +137,44 @@ function setMultiplicador(valor) {
 
 <script>
   
-   function cargarDesdeSheet() {
-      const url = document.getElementById("sheetUrl").value;
-      if (!url.includes("docs.google.com")) return mostrarMensaje("URL inválida");
+  let historial = [];
+  let cantidadTemporal = "10";
+  let timeoutTeclado = null;
 
-      const sheetID = url.match(/\/d\/(.*?)(\/|$)/)?.[1];
-      const apiUrl = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:csv`;
+  function cargarDesdeSheet() {
+    const url = document.getElementById("sheetUrl").value;
+    if (!url.includes("docs.google.com")) return mostrarMensaje("URL inválida");
+    const sheetID = url.match(/\/d\/(.*?)(\/|$)/)?.[1];
+    const apiUrl = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:csv`;
 
-      fetch(apiUrl)
-        .then(res => res.text())
-        .then(csv => Papa.parse(csv, { header: true }))
-        .then(result => {
-          pedidos = agruparPedidos(result.data);
-          llenarSelect();
-        })
-        .catch(() => mostrarMensaje("No se pudo cargar el archivo"));
-    }
+    fetch(apiUrl)
+      .then(res => res.text())
+      .then(csv => Papa.parse(csv, { header: true }))
+      .then(result => {
+        pedidos = agruparPedidos(result.data);
+        llenarSelect();
+      })
+      .catch(() => mostrarMensaje("No se pudo cargar el archivo"));
+  }
 
-    function agruparPedidos(data) {
-      const grupos = {};
-      data.forEach(row => {
-        const id = row.PEDIDO?.trim();
-        if (!id) return;
-        if (!grupos[id]) grupos[id] = [];
-        grupos[id].push({
-          codigo: row.CODIGO?.trim(),
-          descripcion: row.DESCRIPCION?.trim(),
-          cantidad: parseInt(row.CANTIDAD),
-          escaneados: 0
-        });
+  let pedidos = {};
+  let pedidoActual = null;
+
+  function agruparPedidos(data) {
+    const grupos = {};
+    data.forEach(row => {
+      const id = row.PEDIDO?.trim();
+      if (!id) return;
+      if (!grupos[id]) grupos[id] = [];
+      grupos[id].push({
+        codigo: row.CODIGO?.trim(),
+        descripcion: row.DESCRIPCION?.trim(),
+        cantidad: parseInt(row.CANTIDAD),
+        escaneados: 0
       });
-      return grupos;
-    }
+    });
+    return grupos;
+  }
 
   function llenarSelect() {
     const select = document.getElementById("pedidoSelect");
@@ -273,9 +278,8 @@ document.getElementById("barcodeInput").addEventListener("keypress", function (e
 function exportarResumen() {
   if (!pedidoActual) return;
   const filas = pedidoActual.map(p => [p.codigo, p.descripcion, p.cantidad, p.escaneados]);
-  const csv = ["CODIGO,DESCRIPCION,CANTIDAD,ESCANEADOS", ...filas.map(f => f.join(","))].join("\n");
-
-
+  const csv = ["CODIGO,DESCRIPCION,CANTIDAD,ESCANEADOS", ...filas.map(f => f.join(","))].join("
+");
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
