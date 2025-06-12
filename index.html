@@ -222,6 +222,34 @@ function setMultiplicador(valor) {
     div.style.display = "block";
     setTimeout(() => div.style.display = "none", 3000);
   }
+
+  function confirmarManual(codigo) {
+    const producto = pedidoActual.find(p => p.codigo === codigo);
+    if (producto) {
+      producto.escaneados = producto.cantidad;
+      mostrarPedido();
+    }
+  }
+
+  function editarEscaneo(codigo) {
+    const producto = pedidoActual.find(p => p.codigo === codigo);
+    if (producto) {
+      const nuevoValor = prompt("Nueva cantidad escaneada:", producto.escaneados);
+      const cantidad = parseInt(nuevoValor);
+      if (!isNaN(cantidad) && cantidad >= 0) {
+        producto.escaneados = cantidad;
+        mostrarPedido();
+      }
+    }
+  }
+
+  function eliminarEscaneo(codigo) {
+    const producto = pedidoActual.find(p => p.codigo === codigo);
+    if (producto) {
+      producto.escaneados = 0;
+      mostrarPedido();
+    }
+  }
 </script>
 </body>
 </html>
