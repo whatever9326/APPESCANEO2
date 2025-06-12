@@ -353,6 +353,24 @@
       mostrarPedido();
       mostrarMensaje("Progreso borrado", true);
     }
+    <script>
+  function exportarAGoogleSheets() {
+    const url = prompt("Pega aquí el enlace del Web App de Google Apps Script");
+    if (!url) return mostrarMensaje("URL inválida");
+
+    const fila = pedidoActual.map(p => [p.codigo, p.descripcion, p.cantidad, p.escaneados]);
+    const datos = JSON.stringify(fila);
+
+    fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: datos
+    })
+      .then(res => res.ok ? mostrarMensaje("Exportado a Google Sheets", true) : mostrarMensaje("Error al exportar"))
+      .catch(() => mostrarMensaje("Error de conexión al exportar"));
+  }
+</script>
+
   </script>
   <script>
     if ('serviceWorker' in navigator) {
