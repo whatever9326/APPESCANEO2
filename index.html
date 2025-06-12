@@ -125,45 +125,7 @@
   <audio id="sonido-error" preload="auto">
     <source src="error1.wav" type="audio/wav">
   </audio>
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js">document.getElementById("multiplicadorDisplay").addEventListener("click", mostrarTeclado);
-
-function mostrarTeclado() {
-  clearTimeout(timeoutTeclado);
-  document.getElementById("teclado").style.display = "grid";
-  reiniciarTimeout();
-}
-
-function agregarNumero(num) {
-  const input = document.getElementById("multiplicador");
-  input.value = (input.value === "0") ? num : input.value + num;
-  reiniciarTimeout();
-}
-
-function borrarNumero() {
-  const input = document.getElementById("multiplicador");
-  input.value = input.value.slice(0, -1) || "0";
-  reiniciarTimeout();
-}
-
-function aceptarNumero() {
-  document.getElementById("teclado").style.display = "none";
-  document.getElementById("barcodeInput").focus();
-}
-
-function reiniciarTimeout() {
-  clearTimeout(timeoutTeclado);
-  timeoutTeclado = setTimeout(() => {
-    document.getElementById("teclado").style.display = "none";
-  }, 10000);
-}
-
-function setMultiplicador(valor) {
-  cantidadTemporal = valor.toString();
-  document.getElementById("displayMultiplicador").textContent = `Cantidad por escaneo: ${valor}`;
-  document.getElementById("barcodeInput").focus();
-}
-
-</script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
 <script>
   
