@@ -138,7 +138,7 @@ function setMultiplicador(valor) {
 
 <script>
   
-function cargarDesdeSheet() {
+   function cargarDesdeSheet() {
       const url = document.getElementById("sheetUrl").value;
       if (!url.includes("docs.google.com")) return mostrarMensaje("URL inválida");
 
@@ -154,35 +154,22 @@ function cargarDesdeSheet() {
         })
         .catch(() => mostrarMensaje("No se pudo cargar el archivo"));
     }
-  .then(csv => Papa.parse(csv, { header: true }))
-  .then(result => {
-    pedidos = agruparPedidos(result.data);
-    llenarSelect();
-  })
-  .catch(err => {
-    console.error("Error al cargar la hoja:", err);
-    mostrarMensaje("No se pudo cargar la hoja. Asegúrate de que sea pública.");
-  });
-}
 
-  let pedidos = {};
-  let pedidoActual = null;
-
-  function agruparPedidos(data) {
-    const grupos = {};
-    data.forEach(row => {
-      const id = row.PEDIDO?.trim();
-      if (!id) return;
-      if (!grupos[id]) grupos[id] = [];
-      grupos[id].push({
-        codigo: row.CODIGO?.trim(),
-        descripcion: row.DESCRIPCION?.trim(),
-        cantidad: parseInt(row.CANTIDAD),
-        escaneados: 0
+    function agruparPedidos(data) {
+      const grupos = {};
+      data.forEach(row => {
+        const id = row.PEDIDO?.trim();
+        if (!id) return;
+        if (!grupos[id]) grupos[id] = [];
+        grupos[id].push({
+          codigo: row.CODIGO?.trim(),
+          descripcion: row.DESCRIPCION?.trim(),
+          cantidad: parseInt(row.CANTIDAD),
+          escaneados: 0
+        });
       });
-    });
-    return grupos;
-  }
+      return grupos;
+    }
 
   function llenarSelect() {
     const select = document.getElementById("pedidoSelect");
