@@ -250,6 +250,101 @@ function setMultiplicador(valor) {
       mostrarPedido();
     }
   }
+document.getElementById("barcodeInput").addEventListener("keypress", function (e) {
+  if (e.key === "Enter") {
+    const codigo = e.target.value.trim();
+    e.target.value = "";
+    if (!codigo || !pedidoActual) return;
+
+    const producto = pedidoActual.find(p => p.codigo === codigo);
+    if (producto) {
+      const cantidad = parseInt(cantidadTemporal) || 1;
+      producto.escaneados += cantidad;
+      mostrarPedido();
+
+      if (producto.escaneados === producto.cantidad) {
+        document.getElementById("sonido-ok").play();
+      } else if (producto.escaneados > producto.cantidad) {
+        document.getElementById("sonido-error").play();
+      }
+    } else {
+      document.getElementById("sonido-error").play();
+      mostrarMensaje("Código no encontrado");
+    }
+  }
+});
+
+function exportarResumen() {
+  if (!pedidoActual) return;
+  const filas = pedidoActual.map(p => [p.codigo, p.descripcion, p.cantidad, p.escaneados]);
+  const csv = ["CODIGO,DESCRIPCION,CANTIDAD,ESCANEADOS", ...filas.map(f => f.join(","))].join("
+");
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "resumen.csv";
+  link.click();
+}
+
+function exportarExcel() {
+  if (!pedidoActual) return;
+  const data = pedidoActual.map(p => ({
+    CODIGO: p.codigo,
+    DESCRIPCION: p.descripcion,
+    CANTIDAD: p.cantidad,
+    ESCANEADOS: p.escaneados
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Resumen");
+  XLSX.writeFile(wb, "resumen.xlsx");
+}
+
+function exportarTodos() {
+  const todos = [];
+  for (const [pedidoId, productos] of Object.entries(pedidos)) {
+    productos.forEach(p => {
+      todos.push({ PEDIDO: pedidoId, CODIGO: p.codigo, DESCRIPCION: p.descripcion, CANTIDAD: p.cantidad, ESCANEADOS: p.escaneados });
+    });
+  }
+  const ws = XLSX.utils.json_to_sheet(todos);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Todos");
+  XLSX.writeFile(wb, "todos_los_pedidos.xlsx");
+}
+
+function guardarHistorial() {
+  if (!pedidoActual) return;
+  historial.push({ fecha: new Date().toLocaleString(), pedido: JSON.parse(JSON.stringify(pedidoActual)) });
+  try {
+    localStorage.setItem("historial", JSON.stringify(historial));
+    mostrarMensaje("Historial guardado", true);
+  } catch (e) {
+    if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+      mostrarMensaje("No se pudo guardar el historial: almacenamiento lleno");
+    } else {
+      mostrarMensaje("Error al guardar historial");
+    }
+  }
+}
+
+function verHistorial() {
+  const div = document.getElementById("historial");
+  historial = JSON.parse(localStorage.getItem("historial")) || [];
+  div.innerHTML = historial.map(entry => {
+    const lista = entry.pedido.map(p => `${p.codigo}: ${p.escaneados}/${p.cantidad}`).join("<br>");
+    return `<div><strong>${entry.fecha}</strong><br>${lista}</div><hr>`;
+  }).join("");
+}
+
+function borrarProgreso() {
+  if (!pedidoActual) return;
+  pedidoActual.forEach(p => p.escaneados = 0);
+  mostrarPedido();
+  mostrarMensaje("Progreso borrado", true);
+}
+
 </script>
 </body>
 </html>
