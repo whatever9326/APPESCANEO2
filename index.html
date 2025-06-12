@@ -116,6 +116,7 @@
     <button onclick="verHistorial()">Ver historial</button>
 
         <table id="pedidoTable"></table>
+    <div id="mensaje-temporal"></div>
     <div id="historial"></div>
   </div>
 
@@ -345,6 +346,15 @@ function borrarProgreso() {
   mostrarMensaje("Progreso borrado", true);
 }
 
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(reg => console.log('Service Worker registrado:', reg.scope))
+        .catch(err => console.error('Error al registrar Service Worker:', err));
+    });
+  }
 </script>
 </body>
 </html>
