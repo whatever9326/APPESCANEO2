@@ -197,14 +197,19 @@ function setMultiplicador(valor) {
     tabla.innerHTML = "";
     if (!pedidoActual) return;
     const thead = document.createElement("thead");
-    thead.innerHTML = `<tr><th>Código</th><th>Descripción</th><th>Requerido</th><th>Escaneado</th></tr>`;
+    thead.innerHTML = `<tr><th>Código</th><th>Descripción</th><th>Requerido</th><th>Escaneado</th><th>Acciones</th></tr>`;
     tabla.appendChild(thead);
     const tbody = document.createElement("tbody");
     pedidoActual.forEach(p => {
       const row = document.createElement("tr");
       if (p.escaneados === p.cantidad) row.classList.add("completo");
       else if (p.escaneados > p.cantidad) row.classList.add("exceso");
-      row.innerHTML = `<td>${p.codigo}</td><td>${p.descripcion}</td><td>${p.cantidad}</td><td>${p.escaneados}</td>`;
+      row.innerHTML = `<td>${p.codigo}</td><td>${p.descripcion}</td><td>${p.cantidad}</td><td>${p.escaneados}</td>
+<td>
+  <button onclick="confirmarManual('${p.codigo}')">✔️</button>
+  <button onclick="editarEscaneo('${p.codigo}')">✏️</button>
+  <button onclick="eliminarEscaneo('${p.codigo}')">🗑️</button>
+</td>`;
       tbody.appendChild(row);
     });
     tabla.appendChild(tbody);
