@@ -369,8 +369,6 @@
   <script>
     function exportarAGoogleSheets() {
   const url = "https://script.google.com/macros/s/AKfycbw2TqGlzXD8uVcnWy67tJzC80DTf9ts5tQ4euFzoVIohOW3gnm-Y5w1FWFInC-i9qjG/exec";
-  if (!url) return mostrarMensaje("URL inválida");
-
   const fila = pedidoActual.map(p => [p.codigo, p.descripcion, p.cantidad, p.escaneados]);
   const datos = JSON.stringify(fila);
 
@@ -390,6 +388,7 @@
   })
   .catch(() => mostrarMensaje("Error de conexión al exportar"));
 }
+
   </script>
 </body>
 </html>
