@@ -118,6 +118,7 @@
 
     <table id="pedidoTable"></table>
     <div id="mensaje-temporal"></div>
+<div id="exportacion-confirmada" style="text-align: center; margin-top: 0.5rem; font-size: 0.9rem; color: #1976d2;"></div>
     <div id="historial"></div>
   </div>
 
@@ -353,24 +354,8 @@
       mostrarPedido();
       mostrarMensaje("Progreso borrado", true);
     }
-  function exportarAGoogleSheets() {
-    const url = prompt("Pega aquí el enlace del Web App de Google Apps Script");
-    if (!url) return mostrarMensaje("URL inválida");
 
-    const fila = pedidoActual.map(p => [p.codigo, p.descripcion, p.cantidad, p.escaneados]);
-    const datos = JSON.stringify(fila);
-
-    fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: datos
-    })
-      .then(res => res.ok ? mostrarMensaje("Exportado a Google Sheets", true) : mostrarMensaje("Error al exportar"))
-      .catch(() => mostrarMensaje("Error de conexión al exportar"));
-  }
-</script>
-
-  </script>
+  </script> 
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -379,6 +364,32 @@
           .catch(err => console.error('Error al registrar Service Worker:', err));
       });
     }
+  </script>
+
+  <script>
+    function exportarAGoogleSheets() {
+  const url = prompt("https://script.google.com/macros/s/AKfycbw2TqGlzXD8uVcnWy67tJzC80DTf9ts5tQ4euFzoVIohOW3gnm-Y5w1FWFInC-i9qjG/exec");
+  if (!url) return mostrarMensaje("URL inválida");
+
+  const fila = pedidoActual.map(p => [p.codigo, p.descripcion, p.cantidad, p.escaneados]);
+  const datos = JSON.stringify(fila);
+
+  fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: datos
+  })
+  .then(res => {
+    if (res.ok) {
+      mostrarMensaje("Exportado a Google Sheets", true);
+      const ahora = new Date().toLocaleString();
+      document.getElementById("exportacion-confirmada").textContent = `Última exportación: ${ahora}`;
+    } else {
+      mostrarMensaje("Error al exportar");
+    }
+  })
+  .catch(() => mostrarMensaje("Error de conexión al exportar"));
+}
   </script>
 </body>
 </html>
