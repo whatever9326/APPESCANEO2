@@ -140,7 +140,8 @@
     function setMultiplicador(valor) {
       cantidadTemporal = valor.toString();
       document.getElementById("displayMultiplicador").textContent = `Cantidad por escaneo: ${valor}`;
-      document.getElementById("barcodeInput").focus();
+      document.getElementById("barcodeInput").focus()
+enfocarInput();
     }
 
     function cargarDesdeSheet() {
@@ -232,6 +233,7 @@
       if (producto) {
         producto.escaneados = producto.cantidad;
         mostrarPedido();
+        enfocarInput();
       }
     }
 
@@ -243,6 +245,7 @@
         if (!isNaN(cantidad) && cantidad >= 0) {
           producto.escaneados = cantidad;
           mostrarPedido();
+          enfocarInput();
         }
       }
     }
@@ -252,6 +255,7 @@
       if (producto) {
         producto.escaneados = 0;
         mostrarPedido();
+        enfocarInput();
       }
     }
 
@@ -390,7 +394,10 @@
   })
   .catch(() => mostrarMensaje("Error de conexión al exportar"));
 }
-
+function enfocarInput() {
+  const input = document.getElementById("barcodeInput");
+  if (input) input.focus();
+}
   </script>
 </body>
 </html>
